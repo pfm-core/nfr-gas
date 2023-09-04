@@ -85,99 +85,6 @@ function reformatData(monitoringRawData) {
   return formattedOutput;
 }
 
-async function retrieveCapacityTestResult() {
-
-  if (!projectId || !releaseName) {
-
-    uiAlert().invalidProjectIdAndReleaseName();
-    return;
-
-  } else {
-
-    var response = uiAlert().getResultConfirmation();
-
-    if (response == ui.Button.YES) {
-
-      const queryResult = await queryPostgreSQL(projectId, releaseName, 'capacity')
-
-      Logger.log(`queryResult = ${queryResult}`)
-
-      for (let i = 0; i < queryResult.data.record.length; i++) {
-
-        var release = queryResult.data.record[i].release
-        var execution_type = queryResult.data.record[i].execution_type
-        var project = queryResult.data.record[i].project
-        var service = queryResult.data.record[i].service
-        var flow = queryResult.data.record[i].flow
-        var tag = queryResult.data.record[i].tag
-        var vu = queryResult.data.record[i].vu
-        var duration = queryResult.data.record[i].duration
-        var tps = queryResult.data.record[i].tps
-        var error_rate = queryResult.data.record[i].error_rate
-        var rt_avg = queryResult.data.record[i].rt_avg
-        var rt_min = queryResult.data.record[i].rt_min
-        var rt_max = queryResult.data.record[i].rt_max
-        var rt_p90 = queryResult.data.record[i].rt_p90
-        var rt_p95 = queryResult.data.record[i].rt_p95
-        var rt_p99 = queryResult.data.record[i].rt_p99
-        var is_cpu_below_request = queryResult.data.record[i].is_cpu_below_request
-
-        var resource_map = queryResult.data.record[i].resource_map
-        let cpuLimits
-        let cpuRequests
-        let memoryLimits
-        let memoryRequests
-
-        for (const key in resource_map) {
-          if (resource_map.hasOwnProperty(key)) {
-            cpuLimits = resource_map[key]["limits"]["cpu"]
-            cpuRequests = resource_map[key]["requests"]["cpu"]
-            memoryLimits = resource_map[key]["limits"]["memory"]
-            memoryRequests = resource_map[key]["requests"]["memory"]
-          }
-        }
-
-        var cpu_utilization = queryResult.data.record[i].cpu_utilization
-        var cpu_request = queryResult.data.record[i].cpu_request
-        var cpu_limit = queryResult.data.record[i].cpu_limit
-        var memory_utilization = queryResult.data.record[i].memory_utilization
-        var memory_request = queryResult.data.record[i].memory_request
-        var memory_limit = queryResult.data.record[i].memory_limit
-        var timestamp = queryResult.data.record[i].timestamp
-
-        var firstRow = 15 //first row of test result data
-
-        changeValue('B', firstRow + i, i + 1) //Number
-        changeValue('C', firstRow + i, `=HYPERLINK("https://ktbinnovation.atlassian.net/wiki/display/PFM/${projectId}%20%7C%20${service}","${service}")`)
-        changeValue('D', firstRow + i, flow)
-        changeValue('E', firstRow + i, getChart(cpuData, 'ms-cpu')) //CPU Utilization Chart
-        changeValue('F', firstRow + i, cpu_limit)
-        changeValue('G', firstRow + i, cpu_request)
-        changeValue('H', firstRow + i, getChart(memoryData, 'ms-memory')) //Memory Utilization Chart
-        changeValue('I', firstRow + i, memory_limit)
-        changeValue('J', firstRow + i, memory_request)
-        changeValue('K', firstRow + i, vu)
-        changeValue('L', firstRow + i, tps)
-        changeValue('M', firstRow + i, error_rate)
-        changeValue('N', firstRow + i, duration)
-        changeValue('U', firstRow + i, tag)
-        changeValue('O', firstRow + i, rt_avg)
-        changeValue('P', firstRow + i, rt_min)
-        changeValue('Q', firstRow + i, rt_max)
-        changeValue('R', firstRow + i, rt_p90)
-        changeValue('S', firstRow + i, rt_p95)
-        changeValue('T', firstRow + i, rt_p99)
-        changeValue('V', firstRow + i, timestamp)
-        changeValue('X', firstRow + i, `=IFERROR(VLOOKUP(W${firstRow + i},'3.PREPARATION - SINGLE SERVICE'!E22:J1021,6,FALSE),"Please select API")`)
-        changeValue('Y', firstRow + i, `=IFERROR(ROUNDUP(X${firstRow + i}/L${firstRow + i}),"Please select API")`)
-
-        //changeValue(`X${11 + i}`, is_cpu_below_request)
-      }
-    } else {
-      return
-    }
-  }
-}
 
 
 
@@ -198,7 +105,9 @@ async function retrieveTestResult() {
     var response = uiAlert().getResultConfirmation();
 
     if (response == ui.Button.YES) {
-
+      
+      currentSheet.getRange('B11:AK1000').clearContent
+      
       const rawResult = await queryPostgreSQL(projectId, releaseName, testType)
 
       Logger.log(`rawResult = ${rawResult}`)
@@ -251,13 +160,15 @@ async function retrieveTestResult() {
           limit: rawResult.data.record[i].memory_limit
         }
 
+        let chartFormulaSet = []
+
         if (rawResult.data.record[i].monitoring_db !== null) {
 
           const formattedData = reformatData(rawResult.data.record[i].monitoring_db)
           Logger.log(`monitoring_db = ${JSON.stringify(rawResult.data.record[i].monitoring_db)}`)
           Logger.log(`formattedData = ${JSON.stringify(formattedData)}`)
 
-          let chartFormulaSet = []
+
 
           // Construct charts Redis
           if (formattedData.hasOwnProperty('redis')) {
@@ -337,7 +248,8 @@ async function retrieveTestResult() {
 
         var firstRow = 11 //first row of test result data
 
-        changeValue('B', firstRow + i, i + 1) //Number
+        //changeValue('B', firstRow + i, i + 1) //Number
+        currentSheet.getRange(`B${firstRow + 1}`).setDataValidation(checkbox)
         changeValue('C', firstRow + i, `=HYPERLINK("https://ktbinnovation.atlassian.net/wiki/display/PFM/${projectId}%20%7C%20${service}","${service}")`)
         changeValue('D', firstRow + i, flow)
         changeValue('E', firstRow + i, getChart(cpuData, 'ms-cpu')) //CPU Utilization Chart
@@ -361,7 +273,7 @@ async function retrieveTestResult() {
         changeValue('X', firstRow + i, `=IFERROR(VLOOKUP(W${firstRow + i},'3.PREPARATION - SINGLE SERVICE'!E22:J1021,6,FALSE),"Please select API")`)
         changeValue('Y', firstRow + i, `=IFERROR(ROUNDUP(X${firstRow + i}/L${firstRow + i}),"Please select API")`)
 
-        if (chartFormulaSet) {
+        if (chartFormulaSet.length > 0) {
           var chartFirstColumn = 26 // Column Z
           //Attach charts to the report
           for (let ii = 0; ii < chartFormulaSet.length; ii++) {
@@ -370,7 +282,7 @@ async function retrieveTestResult() {
 
           }
         }
-        
+
       }
     } else {
       return

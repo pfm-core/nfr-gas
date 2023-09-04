@@ -1,4 +1,4 @@
-function doGet(e) {
+function doGet() {
 
 }
 
