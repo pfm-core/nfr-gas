@@ -1,4 +1,8 @@
 //Sheet Data 
+var currentSheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet()
+var sheet = SpreadsheetApp.getActive()
+var ui = SpreadsheetApp.getUi()
+
 
 function getCurrentSheetUrl() {
   var url = SpreadsheetApp.getActiveSpreadsheet().getUrl();
@@ -22,20 +26,18 @@ function readValue(sheetName, rangeString) {
 }
 
 function changeValue(column, row, value) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var currentSheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   
   if (typeof column === 'number') {
-    var targetCell = sheet.getRange(row, column);
+    var targetCell = currentSheet.getRange(row, column);
   } else if (typeof column === 'string') {
     var columnNumber = column.toUpperCase().charCodeAt(0) - 64;
-    var targetCell = sheet.getRange(row, columnNumber);
+    var targetCell = currentSheet.getRange(row, columnNumber);
   }
   
   targetCell.setValue(value);
 }
 
-const sheet = SpreadsheetApp.getActive()
-const ui = SpreadsheetApp.getUi()
 
 // Alert Message
 function uiAlert() {

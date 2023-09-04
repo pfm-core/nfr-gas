@@ -1,16 +1,3 @@
-/* function getSparkline(utilization, request) {
-
-  if (utilization && request) {
-    const sparklineChart = `=SPARKLINE({${utilization}}, { "charttype", "line"; "ymax", ${request.replace("m", "").replace("Mi", "")}; "color", IF(MAX(${utilization}) > ${request.replace("m", "").replace("Mi", "")}, "red", "green") })`
-    return sparklineChart
-  } else {
-    return 'N/A'
-  }
-} */
-
-//const cpuChart = getSparkline(cpu_utilization, cpuRequests)
-//const memoryChart = getSparkline(memory_utilization, memoryRequests)
-
 function getMetricData(rawResult, metricValue) {
   const metricData = [];
 
@@ -37,9 +24,6 @@ function getMetricData(rawResult, metricValue) {
   return metricData;
 }
 
-/* 
- * Reformatting data from monitoring_db object retrieved from CockroachDB into chart-convertible format 
- */
 
 function reformatData(monitoringRawData) {
   const formattedOutput = {
@@ -47,48 +31,56 @@ function reformatData(monitoringRawData) {
     cloudsql: {},
   };
 
-  for (const entry of monitoringRawData) {
-    const { db, metric, type, idx, values } = entry;
+  try {
+    for (const entry of monitoringRawData) {
+      const { db, metric, type, idx, values } = entry;
 
-    if (type === 'redis') {
-      if (!formattedOutput.redis[db]) {
-        formattedOutput.redis[db] = {
-          "redis.googleapis.com/stats/cpu_utilization": [],
-          "redis.googleapis.com/stats/memory/usage": [],
-          "redis.googleapis.com/stats/memory/maxmemory": [],
-          "redis.googleapis.com/keyspace/keys": {},
-          "redis.googleapis.com/keyspace/keys_with_expiration": {},
-          "redis.googleapis.com/stats/cache_hit_ratio": [],
-        };
-      }
+      if (!db || !metric) {continue;}
 
-      if (metric === "redis.googleapis.com/keyspace/keys") {
-        if (!formattedOutput.redis[db][metric][idx]) {
-          formattedOutput.redis[db][metric][idx] = [];
+      if (type === 'redis') {
+        if (!formattedOutput.redis[db]) {
+          formattedOutput.redis[db] = {
+            "redis.googleapis.com/stats/cpu_utilization": [],
+            "redis.googleapis.com/stats/memory/usage": [],
+            "redis.googleapis.com/stats/memory/maxmemory": [],
+            "redis.googleapis.com/keyspace/keys": {},
+            "redis.googleapis.com/keyspace/keys_with_expiration": {},
+            "redis.googleapis.com/stats/cache_hit_ratio": [],
+          };
         }
-        formattedOutput.redis[db][metric][idx] = values;
-      } else if (metric === "redis.googleapis.com/keyspace/keys_with_expiration") {
-        if (!formattedOutput.redis[db]["redis.googleapis.com/keyspace/keys_with_expiration"][idx]) {
-          formattedOutput.redis[db]["redis.googleapis.com/keyspace/keys_with_expiration"][idx] = [];
-        }
-        formattedOutput.redis[db]["redis.googleapis.com/keyspace/keys_with_expiration"][idx] = values;
-      } else {
-        formattedOutput.redis[db][metric] = values;
-      }
-    } else if (type === 'cloudsql') {
-      if (!formattedOutput.cloudsql[db]) {
-        formattedOutput.cloudsql[db] = {
-          "cloudsql.googleapis.com/database/cpu/utilization": [],
-          "cloudsql.googleapis.com/database/memory/usage": [],
-          "cloudsql.googleapis.com/database/memory/total_usage": [],
-          "cloudsql.googleapis.com/database/disk/read_ops_count": [],
-          "cloudsql.googleapis.com/database/disk/write_ops_count": [],
-        };
-      }
 
-      formattedOutput.cloudsql[db][metric] = values;
+        if (metric === "redis.googleapis.com/keyspace/keys") {
+          if (!formattedOutput.redis[db][metric][idx]) {
+            formattedOutput.redis[db][metric][idx] = [];
+          }
+          formattedOutput.redis[db][metric][idx] = values;
+        } else if (metric === "redis.googleapis.com/keyspace/keys_with_expiration") {
+          if (!formattedOutput.redis[db]["redis.googleapis.com/keyspace/keys_with_expiration"][idx]) {
+            formattedOutput.redis[db]["redis.googleapis.com/keyspace/keys_with_expiration"][idx] = [];
+          }
+          formattedOutput.redis[db]["redis.googleapis.com/keyspace/keys_with_expiration"][idx] = values;
+        } else {
+          formattedOutput.redis[db][metric] = values;
+        }
+      } else if (type === 'cloudsql') {
+        if (!formattedOutput.cloudsql[db]) {
+          formattedOutput.cloudsql[db] = {
+            "cloudsql.googleapis.com/database/cpu/utilization": [],
+            "cloudsql.googleapis.com/database/memory/usage": [],
+            "cloudsql.googleapis.com/database/memory/total_usage": [],
+            "cloudsql.googleapis.com/database/disk/read_ops_count": [],
+            "cloudsql.googleapis.com/database/disk/write_ops_count": [],
+          };
+        }
+
+        formattedOutput.cloudsql[db][metric] = values;
+      }
     }
-  }
+  } catch (error) {
+    Logger.log("Error reformatting monitoring_db data", error);
+    sheet.toast("Error reformatting monitoring_db data", error);
+    return null
+  };
 
   return formattedOutput;
 }
@@ -155,7 +147,6 @@ async function retrieveCapacityTestResult() {
 
         var firstRow = 15 //first row of test result data
 
-//need to change letter to number
         changeValue('B', firstRow + i, i + 1) //Number
         changeValue('C', firstRow + i, `=HYPERLINK("https://ktbinnovation.atlassian.net/wiki/display/PFM/${projectId}%20%7C%20${service}","${service}")`)
         changeValue('D', firstRow + i, flow)
@@ -190,7 +181,12 @@ async function retrieveCapacityTestResult() {
 
 
 
-async function retrieveE2eTestResult() {
+async function retrieveTestResult() {
+
+  //Distinguish testType based on the sheet name
+  let testType
+  var sheetName = currentSheet.getName()
+  if (sheetName === '6.RESULT - E2E') { testType = 'e2e-load' } else if (sheetName === '4.RESULT - SINGLE SERVICE') { testType = 'capacity' }
 
   if (!projectId || !releaseName) {
 
@@ -203,8 +199,8 @@ async function retrieveE2eTestResult() {
 
     if (response == ui.Button.YES) {
 
-      const rawResult = await queryPostgreSQL(projectId, releaseName, 'e2e-load')
-      
+      const rawResult = await queryPostgreSQL(projectId, releaseName, testType)
+
       Logger.log(`rawResult = ${rawResult}`)
 
       for (let i = 0; i < rawResult.data.record.length; i++) {

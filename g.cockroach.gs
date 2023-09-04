@@ -15,3 +15,14 @@ async function queryPostgreSQL(projectId, releaseName, executionType) {
   return queryResult
 
 }
+
+function cockroachHealthheck() {
+
+  var healthcheckResponse = UrlFetchApp.fetch('https://db-client-99nl.onrender.com/healthz')
+  Logger.log(healthcheckResponse.getResponseCode())
+
+  if (healthcheckResponse.getResponseCode() === 200) {
+    SpreadsheetApp.getActiveSpreadsheet().toast(`Connected to Database (status: ${healthcheckResponse.getResponseCode()})`)
+  }
+
+}
