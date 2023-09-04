@@ -1,29 +1,39 @@
-// @ts-nocheck
-// main functions
+function getJiraCredentials() {
 
+  var jiraAccountEmailPrompt = ui.prompt('Please insert JIRA Email', ui.ButtonSet.OK_CANCEL);
 
+  var apiTokenPrompt = ui.prompt(`Please insert JIRA API Token
+    \r\n Visit url below for more info:
+    \r https://id.atlassian.com/manage-profile/security/api-tokens`, ui.ButtonSet.OK_CANCEL);
 
-async function createIssue(executionType, ticketProperties) {
+  var jiraEmail = jiraAccountEmailPrompt.getResponseText();
+  var apiToken = apiTokenPrompt.getResponseText();
+  var encodedApiKey = Utilities.base64Encode(`${jiraEmail}:${apiToken}`);
 
-  let summary
-  let issueDescription
-  var serviceName = ticketProperties.serviceName
-  var businessFlow = '' //TBD
+  if (jiraAccountEmailPrompt.getSelectedButton() == ui.Button.OK && apiTokenPrompt.getSelectedButton() == ui.Button.OK) {
+    if (jiraEmail == '' || apiToken == '') {
+      ui.alert('Please insert both Email and API Token.');
+      return;
+    }
+    return encodedApiKey
+  }
+  return;
+}
 
-  switch (executionType) {
+async function createIssue(ticketType, ticketProperties, jiraCredential) {
+
+  switch (ticketType) {
 
 
 
     case 'capacity':
-      var apiMethodAndPath = ticketProperties.apiMethodAndPath
-      var expectedTps = ticketProperties.expectedTps
       var capacityContent =
         `{
-        "microservice": "${serviceName}",
-        "api": "${apiMethodAndPath}",
-        "expected-tps": ${expectedTps}\r\n}`
-      summary = `pfm-${executionType} | ${serviceName} | ${apiMethodAndPath}`
-      issueDescription = [
+        "microservice": "${ticketProperties.serviceName}",
+        "api": "${ticketProperties.apiMethodAndPath}",
+        "expected-tps": ${ticketProperties.expectedTps}\r\n}`
+      var summary = `pfm-${ticketType} | ${ticketProperties.serviceName} | ${ticketProperties.apiMethodAndPath}`
+      var issueDescription = [
         {
           type: "codeBlock",
           attrs: {
@@ -42,22 +52,39 @@ async function createIssue(executionType, ticketProperties) {
 
 
     case 'scaling':
-      summary = `pfm-${executionType} | ${serviceName}`
-      issueDescription = []
+      var summary = `pfm-${ticketType} | ${ticketProperties.serviceName}`
+      var issueDescription = []
       break;
 
 
 
     case 'e2e-load':
-      summary = `pfm-${executionType} | ${businessFlow}`
-      issueDescription = []
+      var summary = `pfm-${ticketType} | ${ticketProperties.businessFlow}`
+      var e2eContent =
+        `{
+        "microservice-list": ${ticketProperties.serviceList.split('\n').map(line => `"${line}",`).join('\n')},
+        "api-list": ${ticketProperties.apiList.split('\n').map(line => `"${line}",`).join('\n')}\r\n}`
+      var issueDescription = [
+        {
+          type: "codeBlock",
+          attrs: {
+            language: "json"
+          },
+          content: [
+            {
+              type: "text",
+              text: e2eContent
+            }
+          ]
+        }
+      ]
       break;
 
 
 
     case 'e2e-load-external':
-      summary = `pfm-${executionType} | ${businessFlow}`
-      issueDescription = []
+      var summary = `pfm-${ticketType} | ${ticketProperties.businessFlow}`
+      var issueDescription = []
       break;
 
 
@@ -110,7 +137,10 @@ async function createIssue(executionType, ticketProperties) {
 
   const options = {
     method: 'POST',
-    headers: headers,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic ' + jiraCredential
+    },
     payload: JSON.stringify(ticketData)
   };
 
@@ -123,7 +153,13 @@ async function createIssue(executionType, ticketProperties) {
       var data = JSON.parse(response.getContentText());
       Logger.log(`response : ${response}`)
       Logger.log(`data : ${data}`)
-      return data; //data
+
+      if (ticketType === 'capacity') {
+        addRemoteLink(jiraCredential, data.key, 'sla', ticketProperties.serviceName)
+        addRemoteLink(jiraCredential, data.key, 'nfr')
+      }
+
+      return data;
 
     } else {
 
@@ -144,77 +180,69 @@ async function createIssue(executionType, ticketProperties) {
 
 
 
-async function createCapacityIssues() {
+async function createSelectedIssues() {
+
+  let ticketType
+  var sheetName = currentSheet.getName()
+  if (sheetName === '3.PREPARATION - SINGLE SERVICE') { ticketType = 'capacity' } else if (sheetName === '5.PREPARATION - E2E') { ticketType = 'e2e-load' }
+
 
   var nfrStatus = 'Approved'
   var epicName = ''
   var epicKey = ''
 
-  if (nfrStatus !== 'Approved' /* && epicName !== "" && epicKey !== "" */) {
 
-    SpreadsheetApp.getUi().alert('All conditions must be fulfilled.', 'This form must be approved and Epic must be defined first', SpreadsheetApp.getUi().ButtonSet.OK);
+  //var response = Browser.msgBox("Are you sure you want to bulk create JIRA tickets?", Browser.Buttons.YES_NO);
 
-  } else {
-
-    //var response = Browser.msgBox("Are you sure you want to bulk create JIRA tickets?", Browser.Buttons.YES_NO);
-
-    var response = SpreadsheetApp.getUi().alert(
-      `Are you sure you want to bulk create JIRA tickets?
+  var response = ui.alert(
+    `Are you sure you want to bulk create JIRA tickets?
     \r
     \r Please check the following before clicking YES.
     \r - Target project:  ${baseUrl + '/browse/' + projectKey}`
-      , SpreadsheetApp.getUi().ButtonSet.YES_NO);
+    , SpreadsheetApp.getUi().ButtonSet.YES_NO);
 
-    if (response == SpreadsheetApp.getUi().Button.YES) {
+  if (response == ui.Button.YES) {
 
-      var jsonData = getTickBoxValues();
 
-      if (jsonData.length <= 0) { SpreadsheetApp.getUi().alert('Please select at least one row to proceed .'); }
+    var jsonData = getTickBoxValues(ticketType);
 
-      else {
+    if (jsonData.length <= 0) {
+      ui.alert('Please select at least one row to proceed .');
+      return
+    }
 
-        //var apiList = readValue("2.API", "B7:P16") //P1013
-        //Logger.log(`apiList = ${apiList}`)
+    var jiraCredential = getJiraCredentials();
 
-        for (var i = 0; i < jsonData.length; i++) {
+    if (jiraCredential === undefined || jiraCredential === '') { return }
 
-          var ticketProperties = jsonData[i]
-          var serviceName = ticketProperties.serviceName
+    for (var i = 0; i < jsonData.length; i++) {
 
-          try {
+      var ticketProperties = jsonData[i]
 
-            var ticketResponse = await createIssue('capacity', ticketProperties);
-            var ticketKey = ticketResponse.key;
 
-            //Logger.log(`ticketResponse : ${ticketResponse}`)
-            //Logger.log(`ticketKey : ${ticketKey}`)
+      try {
 
-            addRemoteLink(ticketKey, 'sla', serviceName)
-            addRemoteLink(ticketKey, 'nfr')
+        var ticketResponse = await createIssue(ticketType, ticketProperties, jiraCredential);
+        var ticketKey = ticketResponse.key;
 
-          } catch (e) {
+      } catch (e) {
 
-            SpreadsheetApp.getUi().alert(`Error creating Jira ticket ${e}`, 'Click OK to close', SpreadsheetApp.getUi().ButtonSet.OK);
-
-          }
-
-          //SpreadsheetApp.getUi().alert(`Ticket No. ${i + 1} Creation Succeeded `, 'Click OK to close', SpreadsheetApp.getUi().ButtonSet.OK);
-
-          // Change tickbox cell(s) to 'created' to prevent creating duplicate tickets 
-          changeValue('B', ticketProperties.tickedRow, 'Created')
-
-        }
-
-        SpreadsheetApp.getUi().alert(`Finished creating ticket(s)`);
+        SpreadsheetApp.getUi().alert(`Error creating Jira ticket : \r\n ${e} \r\n Aborting ticket creation.`); return
 
       }
 
-    } else {
-      return; // If no
+      // Change tickbox cell(s) to 'created' to prevent creating duplicate tickets 
+      changeValue('B', ticketProperties.tickedRow, 'Created')
+
     }
 
+    SpreadsheetApp.getUi().alert(`Finished creating ticket(s)`);
+
   }
+
 }
+
+
 
 
 async function createScalingIssues() {
@@ -245,6 +273,8 @@ async function createScalingIssues() {
         }
       }
 
+      var jiraCredential = getJiraCredentials();
+
       //Logger.log(`scalingServiceList = ${scalingServiceList}`)
 
       for (var i = 0; i < scalingServiceList.length; i++) {
@@ -254,7 +284,7 @@ async function createScalingIssues() {
 
         try {
 
-          await createIssue('scaling', ticketProperties)
+          await createIssue('scaling', ticketProperties, jiraCredential)
 
         } catch (e) {
 
@@ -271,25 +301,34 @@ async function createScalingIssues() {
 
 
 
-function getTickBoxValues() {
+function getTickBoxValues(ticketType) {
 
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = sheet.getDataRange().getValues();
+  var data = currentSheet.getDataRange().getValues();
   var jsonData = [];
 
   for (var i = 0; i < data.length; i++) {
     if (data[i][1] === true) {
 
-      var row = {
+      if (ticketType === 'capacity') {
+        var row = {
 
-        tickedRow: 1 + i,            //DON'T FORGET TO CHANGE B IF THE TICK BOX COLUMN CHANGES
-        businessFlow: data[i][2],
-        serviceName: data[i][3],
-        apiMethodAndPath: data[i][4],
-        peakUsers: data[i][8],
-        expectedTps: data[i][9],
+          tickedRow: 1 + i,            //DON'T FORGET TO CHANGE B IF THE TICK BOX COLUMN CHANGES
+          businessFlow: data[i][2],
+          serviceName: data[i][3],
+          apiMethodAndPath: data[i][4],
+          peakUsers: data[i][8],
+          expectedTps: data[i][9],
 
-      };
+        };
+      } else if (ticketType === 'e2e-load') {
+        var row = {
+          tickedRow: 1 + i,            //DON'T FORGET TO CHANGE B IF THE TICK BOX COLUMN CHANGES
+          businessFlow: data[i][2],
+          serviceList: data[i][3],
+          apiList: data[i][4]
+
+        };
+      }
 
       jsonData.push(row);
 
@@ -309,7 +348,7 @@ function wrapValueWithQuotes(value) {
   }
 }
 
-function addRemoteLink(ticketId, linkType, serviceName) {
+function addRemoteLink(jiraCredential, ticketId, linkType, serviceName) {
 
   //var serviceName = ticketProperties.serviceName
 
@@ -337,7 +376,10 @@ function addRemoteLink(ticketId, linkType, serviceName) {
 
   const options = {
     method: 'POST',
-    headers: headers,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic ' + jiraCredential
+    },
     payload: JSON.stringify(bodyData)
   };
 

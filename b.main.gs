@@ -56,6 +56,11 @@ function uiAlert() {
 
       return response = ui.Button.YES ? "YES" : "NO";
       
+    },
+    insertApiKey: function () {
+      ui.prompt(`Please insert JIRA API Token
+      \r\n Visit url below for more info:
+      \r\n https://id.atlassian.com/manage-profile/security/api-tokens`)
     }
 
   }

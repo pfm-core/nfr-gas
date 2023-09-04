@@ -35,7 +35,7 @@ function reformatData(monitoringRawData) {
     for (const entry of monitoringRawData) {
       const { db, metric, type, idx, values } = entry;
 
-      if (!db || !metric) {continue;}
+      if (!db || !metric) { continue; }
 
       if (type === 'redis') {
         if (!formattedOutput.redis[db]) {
@@ -186,7 +186,7 @@ async function retrieveTestResult() {
   //Distinguish testType based on the sheet name
   let testType
   var sheetName = currentSheet.getName()
-  if (sheetName === '6.RESULT - E2E') { testType = 'e2e-load' } else if (sheetName === '4.RESULT - SINGLE SERVICE') { testType = 'capacity' }
+  if (sheetName === '4.RESULT - SINGLE SERVICE') { testType = 'capacity' } else if (sheetName === '6.RESULT - E2E') { testType = 'e2e-load' }
 
   if (!projectId || !releaseName) {
 
@@ -251,79 +251,86 @@ async function retrieveTestResult() {
           limit: rawResult.data.record[i].memory_limit
         }
 
+        if (rawResult.data.record[i].monitoring_db !== null) {
 
-        const formattedData = reformatData(rawResult.data.record[i].monitoring_db)
-        Logger.log(`monitoring_db = ${JSON.stringify(rawResult.data.record[i].monitoring_db)}`)
-        Logger.log(`formattedData = ${JSON.stringify(formattedData)}`)
+          const formattedData = reformatData(rawResult.data.record[i].monitoring_db)
+          Logger.log(`monitoring_db = ${JSON.stringify(rawResult.data.record[i].monitoring_db)}`)
+          Logger.log(`formattedData = ${JSON.stringify(formattedData)}`)
 
-        let chartFormulaSet = []
+          let chartFormulaSet = []
 
-        // Construct charts Redis
-        for (const redisEntry in formattedData.redis) {
+          // Construct charts Redis
+          if (formattedData.hasOwnProperty('redis')) {
+            for (const redisEntry in formattedData.redis) {
 
-          // Redis | CPU Utilization
-          var rcd = formattedData.redis[redisEntry]["redis.googleapis.com/stats/cpu_utilization"]
-          var frcd = getChart(rcd, "redis-cpu", redisEntry);
-          chartFormulaSet.push(frcd)
+              // Redis | CPU Utilization
+              var rcd = formattedData.redis[redisEntry]["redis.googleapis.com/stats/cpu_utilization"]
+              var frcd = getChart(rcd, "redis-cpu", redisEntry);
+              chartFormulaSet.push(frcd)
 
-          // Redis | Memory Usage & Maximum
-          var rmu = formattedData.redis[redisEntry]["redis.googleapis.com/stats/memory/usage"];
-          var rmm = formattedData.redis[redisEntry]["redis.googleapis.com/stats/memory/maxmemory"];
-          var rmum = {
-            usage: rmu,
-            max: rmm,
-          };
-          var frmum = getChart(rmum, 'redis-memory', redisEntry)
-          chartFormulaSet.push(frmum)
+              // Redis | Memory Usage & Maximum
+              var rmu = formattedData.redis[redisEntry]["redis.googleapis.com/stats/memory/usage"];
+              var rmm = formattedData.redis[redisEntry]["redis.googleapis.com/stats/memory/maxmemory"];
+              var rmum = {
+                usage: rmu,
+                max: rmm,
+              };
+              var frmum = getChart(rmum, 'redis-memory', redisEntry)
+              chartFormulaSet.push(frmum)
 
-          // Redis | Cache Hit Ratio
-          var rchr = formattedData.redis[redisEntry]["redis.googleapis.com/stats/cache_hit_ratio"]
-          var frchr = getChart(rchr, "redis-cache-hit-ratio", redisEntry);
-          chartFormulaSet.push(frchr)
+              // Redis | Cache Hit Ratio
+              var rchr = formattedData.redis[redisEntry]["redis.googleapis.com/stats/cache_hit_ratio"]
+              var frchr = getChart(rchr, "redis-cache-hit-ratio", redisEntry);
+              chartFormulaSet.push(frchr)
 
-          // Redis | Keys in Database
-          var redisKeys = {};
-          var redisData = formattedData.redis;
+              // Redis | Keys in Database
+              var redisKeys = {};
+              var redisData = formattedData.redis;
 
-          for (const redisEntry in redisData) {
-            var keysData = redisData[redisEntry]["redis.googleapis.com/keyspace/keys"];
-            var expKeysData = redisData[redisEntry]["redis.googleapis.com/keyspace/keys_with_expiration"];
+              for (const redisEntry in redisData) {
+                var keysData = redisData[redisEntry]["redis.googleapis.com/keyspace/keys"];
+                var expKeysData = redisData[redisEntry]["redis.googleapis.com/keyspace/keys_with_expiration"];
 
-            for (const key in keysData) {
-              redisKeys[`key-${key}`] = keysData[key];
-            }
+                for (const key in keysData) {
+                  redisKeys[`key-${key}`] = keysData[key];
+                }
 
-            for (const key in expKeysData) {
-              redisKeys[`exp-key-${key}`] = expKeysData[key];
+                for (const key in expKeysData) {
+                  redisKeys[`exp-key-${key}`] = expKeysData[key];
+                }
+              }
+              var frk = getChart(redisKeys, 'redis-key-in-db', redisEntry)
+              chartFormulaSet.push(frk)
+
             }
           }
-          var frk = getChart(redisKeys, 'redis-key-in-db', redisEntry)
-          chartFormulaSet.push(frk)
 
-        }
+          // Construct charts CloudSQL
+          if (formattedData.hasOwnProperty('cloudsql')) {
 
-        // Construct charts CloudSQL
-        for (const cloudsqlEntry in formattedData.cloudsql) {
+            for (const cloudsqlEntry in formattedData.cloudsql) {
 
-          // CloudSQL | CPU Utilization
-          var csqlc = formattedData.cloudsql[cloudsqlEntry]["cloudsql.googleapis.com/database/cpu/utilization"];
-          var fcsqlc = getChart(csqlc, 'db-cpu', cloudsqlEntry)
-          chartFormulaSet.push(fcsqlc)
+              // CloudSQL | CPU Utilization
+              var csqlc = formattedData.cloudsql[cloudsqlEntry]["cloudsql.googleapis.com/database/cpu/utilization"];
+              var fcsqlc = getChart(csqlc, 'db-cpu', cloudsqlEntry)
+              chartFormulaSet.push(fcsqlc)
 
-          // CloudSQL | Memory Utilization
-          var csqlm = formattedData.cloudsql[cloudsqlEntry]["cloudsql.googleapis.com/database/memory/usage"];
-          var fcsqlm = getChart(csqlm, 'db-memory', cloudsqlEntry)
-          chartFormulaSet.push(fcsqlm)
+              // CloudSQL | Memory Utilization
+              var csqlm = formattedData.cloudsql[cloudsqlEntry]["cloudsql.googleapis.com/database/memory/usage"];
+              var fcsqlm = getChart(csqlm, 'db-memory', cloudsqlEntry)
+              chartFormulaSet.push(fcsqlm)
 
-          // CloudSQL | Disk Read & Write
-          var csqla = formattedData.cloudsql[cloudsqlEntry]["cloudsql.googleapis.com/database/disk/read_ops_count"];
-          var csqlb = formattedData.cloudsql[cloudsqlEntry]["cloudsql.googleapis.com/database/disk/write_ops_count"];
-          var csqldrw = {
-            read: csqla,
-            write: csqlb
+              // CloudSQL | Disk Read & Write
+              var csqla = formattedData.cloudsql[cloudsqlEntry]["cloudsql.googleapis.com/database/disk/read_ops_count"];
+              var csqlb = formattedData.cloudsql[cloudsqlEntry]["cloudsql.googleapis.com/database/disk/write_ops_count"];
+              var csqldrw = {
+                read: csqla,
+                write: csqlb
+              }
+              var fcsqld = getChart(csqldrw, 'db-io', cloudsqlEntry)
+              chartFormulaSet.push(fcsqld)
+            }
           }
-          var fcsqld = getChart(csqldrw, 'db-io', cloudsqlEntry)
-          chartFormulaSet.push(fcsqld)
         }
 
         var timestamp = rawResult.data.record[i].timestamp
@@ -354,14 +361,16 @@ async function retrieveTestResult() {
         changeValue('X', firstRow + i, `=IFERROR(VLOOKUP(W${firstRow + i},'3.PREPARATION - SINGLE SERVICE'!E22:J1021,6,FALSE),"Please select API")`)
         changeValue('Y', firstRow + i, `=IFERROR(ROUNDUP(X${firstRow + i}/L${firstRow + i}),"Please select API")`)
 
-        var chartFirstColumn = 26 // Column Z
-        //Attach charts to the report
-        for (let ii = 0; ii < chartFormulaSet.length; ii++) {
+        if (chartFormulaSet) {
+          var chartFirstColumn = 26 // Column Z
+          //Attach charts to the report
+          for (let ii = 0; ii < chartFormulaSet.length; ii++) {
 
-          changeValue(chartFirstColumn + ii, firstRow + i, chartFormulaSet[ii])
+            changeValue(chartFirstColumn + ii, firstRow + i, chartFormulaSet[ii])
 
+          }
         }
-
+        
       }
     } else {
       return
