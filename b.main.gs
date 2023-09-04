@@ -2,7 +2,7 @@
 var currentSheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet()
 var sheet = SpreadsheetApp.getActive()
 var ui = SpreadsheetApp.getUi()
-var checkbox = rule = SpreadsheetApp.newDataValidation().requireCheckbox().build();
+var checkbox = SpreadsheetApp.newDataValidation().requireCheckbox().build();
 
 function getCurrentSheetUrl() {
   var url = SpreadsheetApp.getActiveSpreadsheet().getUrl();

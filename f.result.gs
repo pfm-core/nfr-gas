@@ -90,6 +90,7 @@ function reformatData(monitoringRawData) {
 
 async function retrieveTestResult() {
 
+  var firstRow = 11 //first row of test result data
   //Distinguish testType based on the sheet name
   let testType
   var sheetName = currentSheet.getName()
@@ -105,9 +106,9 @@ async function retrieveTestResult() {
     var response = uiAlert().getResultConfirmation();
 
     if (response == ui.Button.YES) {
-      
-      currentSheet.getRange('B11:AK1000').clearContent
-      
+
+      currentSheet.getRange(firstRow, 2, 990, 36).clearContent()
+
       const rawResult = await queryPostgreSQL(projectId, releaseName, testType)
 
       Logger.log(`rawResult = ${rawResult}`)
@@ -246,10 +247,11 @@ async function retrieveTestResult() {
 
         var timestamp = rawResult.data.record[i].timestamp
 
-        var firstRow = 11 //first row of test result data
-
         //changeValue('B', firstRow + i, i + 1) //Number
-        currentSheet.getRange(`B${firstRow + 1}`).setDataValidation(checkbox)
+
+        currentSheet.getRange(firstRow + i, 2).setDataValidation(checkbox)
+        changeValue('B', firstRow + i, 'FALSE')
+
         changeValue('C', firstRow + i, `=HYPERLINK("https://ktbinnovation.atlassian.net/wiki/display/PFM/${projectId}%20%7C%20${service}","${service}")`)
         changeValue('D', firstRow + i, flow)
         changeValue('E', firstRow + i, getChart(cpuData, 'ms-cpu')) //CPU Utilization Chart
