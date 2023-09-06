@@ -71,6 +71,8 @@ function uiAlert() {
 function getTickBoxValues(type) {
 
   var data = currentSheet.getDataRange().getValues();
+  var formula = currentSheet.getDataRange().getFormulas();
+
   var jsonData = [];
 
   for (var i = 0; i < data.length; i++) {
@@ -95,12 +97,43 @@ function getTickBoxValues(type) {
           apiList: data[i][4]
 
         };
-      } else if (type === 'capacity-report') {
+      } else if (type === 'report') {
         var row = {
           'serviceName': data[i][2],
           'flow': data[i][3],
-          'cpu-utilization': data[i][4]
-
+          'cpu-chart': formula[i][4],
+          'cpu-limit': data[i][5],
+          'cpu-request': data[i][6],
+          'memory-chart': formula[i][7],
+          'memory-limit': data[i][8],
+          'memory-request': data[i][9],
+          'vu': data[i][10],
+          'tps': data[i][11],
+          'error-rate': data[i][12],
+          'duration': data[i][13],
+          'rt-avg': data[i][14],
+          'rt-min': data[i][15],
+          'rt-max': data[i][16],
+          'rt-p90': data[i][17],
+          'rt-p95': data[i][18],
+          'rt-p99': data[i][19],
+          'tag': data[i][20],
+          'timestamp': data[i][21],
+          'api-mapping': data[i][22],
+          'expected-tps': formula[i][23],
+          'pod-required': formula[i][24],
+          'monitoring-1': formula[i][25],
+          'monitoring-2': formula[i][26],
+          'monitoring-3': formula[i][27],
+          'monitoring-4': formula[i][28],
+          'monitoring-5': formula[i][29],
+          'monitoring-6': formula[i][30],
+          'monitoring-7': formula[i][31],
+          'monitoring-8': formula[i][32],
+          'monitoring-9': formula[i][33],
+          'monitoring-10': formula[i][34],
+          'monitoring-11': formula[i][35],
+          'monitoring-12': formula[i][36],
         };
       }
 
@@ -112,3 +145,4 @@ function getTickBoxValues(type) {
   //Logger.log(`Ticked box(es) output: ${JSON.stringify(jsonData)}`)
   return jsonData;
 }
+
