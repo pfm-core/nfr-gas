@@ -5,6 +5,8 @@ var baseUrl = readValue('0.PROPERTY', 'D14')
 
 //for ktbinnovation
 //var apiToken = 'cC5rdW5nc2FwYXR0YXJha3VsQGFjY2VudHVyZS5jb206QVRBVFQzeEZmR0YwbWRJX2Z0QV9lS056UjVmT09QVXdVd0l3a3NubVhOSUcwWElzazFDallocUNQUFh1RWljREozWFlWUjhCdG5DQzlYSk9NdGNUdnI1R0xIbloxOUhaekZkbXRWWF9WVVdnemszOVpURVhYcjk3UGRJUVV1X3N5VUZhVGdNNFEzUkdCQlRzVHJ5WEpFVVFxMk1FN2dheFRnYWNpZ1piSmtvcldmTEktR0xQQ0kwPTc0RkY5MUVD'
+//var email = 'p.kungsapattarakul@gmail.com'
+//var token = 'ATATT3xFfGF0mdI_ftA_eKNzR5fOOPUwUwIwksnmXNIG0XIsk1CjYhqCPPXuEicDJ3XYVR8BtnCC9XJOMtcTvr5GLHnZ19HZzFdmtVX_VUWgzk39ZTEXXr97PdIQUu_syUFaTgM4Q3RGBBTsTryXJEUQq2ME7gaxTgacigZbJkorWfLI-GLPCI0=74FF91EC'
 /* var headers = {
   'Content-Type': 'application/json',
   'Authorization': 'Basic ' + apiToken

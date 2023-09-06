@@ -107,7 +107,8 @@ async function retrieveTestResult() {
 
     if (response == ui.Button.YES) {
 
-      currentSheet.getRange(firstRow, 2, 990, 36).clearContent()
+      //Clean up existing data
+      currentSheet.getRange(firstRow, 1, 990, 36).clearContent().clearDataValidations()
 
       const rawResult = await queryPostgreSQL(projectId, releaseName, testType)
 
@@ -118,7 +119,7 @@ async function retrieveTestResult() {
         var release = rawResult.data.record[i].release
         var execution_type = rawResult.data.record[i].execution_type
         var project = rawResult.data.record[i].project
-        var service = rawResult.data.record[i].service
+        var service = rawResult.data.record[i].service_idx
         var flow = rawResult.data.record[i].flow
         var tag = rawResult.data.record[i].tag
         var vu = rawResult.data.record[i].vu

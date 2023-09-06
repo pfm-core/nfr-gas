@@ -299,46 +299,6 @@ async function createScalingIssues() {
   }
 }
 
-
-
-function getTickBoxValues(ticketType) {
-
-  var data = currentSheet.getDataRange().getValues();
-  var jsonData = [];
-
-  for (var i = 0; i < data.length; i++) {
-    if (data[i][1] === true) {
-
-      if (ticketType === 'capacity') {
-        var row = {
-
-          tickedRow: 1 + i,            //DON'T FORGET TO CHANGE B IF THE TICK BOX COLUMN CHANGES
-          businessFlow: data[i][2],
-          serviceName: data[i][3],
-          apiMethodAndPath: data[i][4],
-          peakUsers: data[i][8],
-          expectedTps: data[i][9],
-
-        };
-      } else if (ticketType === 'e2e-load') {
-        var row = {
-          tickedRow: 1 + i,            //DON'T FORGET TO CHANGE B IF THE TICK BOX COLUMN CHANGES
-          businessFlow: data[i][2],
-          serviceList: data[i][3],
-          apiList: data[i][4]
-
-        };
-      }
-
-      jsonData.push(row);
-
-    }
-  }
-
-  Logger.log(`Ticked box(es) output: ${JSON.stringify(jsonData)}`)
-  return jsonData;
-}
-
 function wrapValueWithQuotes(value) {
   if (typeof value === 'number' || typeof value === 'boolean') {
     return value;

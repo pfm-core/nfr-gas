@@ -104,7 +104,7 @@ function getChart(rawData, chartType, componentName) {
 
     chartProperties.options.plugins = {
         datalabels: {
-            display: true,
+            display: false,
             backgroundColor: 'rgb(255,255,255)',
             borderColor: 'rgb(54, 162, 235)',
             borderWidth: 1,
@@ -139,7 +139,7 @@ function getChart(rawData, chartType, componentName) {
                         pointRadius: 3,
                         borderWidth: 3,
                         lineTension: 0.5,
-                        datalabels: { display: true }
+                        datalabels: { display: false }
                     },
                     {
                         label: "Requested",
@@ -270,7 +270,7 @@ function getChart(rawData, chartType, componentName) {
                     borderWidth: 2,
                     borderDash: b,
                     lineTension: 0.5,
-                    datalabels: { display: true }
+                    datalabels: { display: false }
                 }
 
                 chartProperties.data.datasets.push(d)
@@ -287,24 +287,6 @@ function getChart(rawData, chartType, componentName) {
 
     console.log(`chart result : ${JSON.stringify(endpoint)}`)
 
-    return `=IMAGE("${endpoint}")`
+    return `=HYPERLINK("${endpoint}",IMAGE("${endpoint}"))`
 
 }
-
-
-//TEST
-
-/* var cpuData = {
-    utilization: [0.07, 0.24, 0.35, 0.4, 0.37, 0.33, 0.4, 0.36, 0.34, 0.39, 0.31, 0.12],
-    request: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-    limit: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-} */
-
-
-/* var memoryData = {
-    memory_utilization: rawResult.data.record[i].memory_utilization,
-    memory_request: rawResult.data.record[i].memory_request,
-    memory_limit: rawResult.data.record[i].memory_limit
-} */
-
-/* console.log(getChart(cpuData, 'ms-cpu')) */
