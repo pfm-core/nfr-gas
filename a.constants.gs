@@ -19,3 +19,8 @@ var projectKey = readValue('0.PROPERTY', 'D15')
 //var epicName = readValue('0.PROPERTY', 'D22')
 var epicKey = readValue('0.PROPERTY', 'D16')
 var isHpaRequired = readValue('0.PROPERTY', 'D8')
+
+var cellColor = {
+  mandatoryBlue: [214, 243, 254],
+  automatedGrey: [239, 239, 239]
+}
