@@ -99,7 +99,7 @@ function getTickBoxValues(type) {
         };
       } else if (type === 'report') {
         var row = {
-          'serviceName': data[i][2],
+          'serviceName': formula[i][2],
           'flow': data[i][3],
           'cpu-chart': formula[i][4],
           'cpu-limit': data[i][5],

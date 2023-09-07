@@ -15,6 +15,9 @@
     }, {
       "menuName": "Untitled Macro",
       "functionName": "UntitledMacro"
+    }, {
+      "menuName": "filter",
+      "functionName": "filter"
     }]
   }
 }

@@ -1,7 +1,7 @@
 const backgroundColor = 'rgb(255,255,255)'
 const quickChartBaseUrl = 'https://quickchart.io/chart?'
-const width = 350
-const height = 200
+const width = 250
+const height = 150
 
 const color = {
     red: {

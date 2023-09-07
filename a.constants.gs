@@ -24,3 +24,16 @@ var cellColor = {
   mandatoryBlue: [214, 243, 254],
   automatedGrey: [239, 239, 239]
 }
+
+var chartUnit = {
+'ms-cpu' : '',
+'ms-memory' : '',
+'redis-cpu' : 'mCPU',
+'redis-memory' : 'MiB',
+'redis-cache-hit-ratio' : '%',
+'db-cpu' : '%',
+'db-memory' : 'MiB',
+'db-total-memory' : '',
+'db-io' : '/s',
+'redis-key-in-db' : 'keys',
+}
